@@ -4,6 +4,8 @@
 
 package xorm
 
+import "github.com/go-xorm/core"
+
 // Begin a transaction
 func (session *Session) Begin() error {
 	if session.isAutoCommit {
@@ -25,6 +27,14 @@ func (session *Session) Rollback() error {
 		session.saveLastSQL(session.engine.dialect.RollBackStr())
 		session.isCommitedOrRollbacked = true
 		return session.tx.Rollback()
+	}
+	return nil
+}
+
+// Commit When using transaction, Commit will commit all operations.
+func (session *Session) Tx() *core.Tx {
+	if !session.isAutoCommit && !session.isCommitedOrRollbacked {
+		return session.tx
 	}
 	return nil
 }
