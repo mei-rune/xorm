@@ -7,8 +7,17 @@ package xorm
 import (
 	"time"
 
+	"xorm.io/core"
 	"xorm.io/xorm/log"
 )
+
+// Commit When using transaction, Commit will commit all operations.
+func (session *Session) Tx() *core.Tx {
+	if !session.isAutoCommit && !session.isCommitedOrRollbacked {
+		return session.tx
+	}
+	return nil
+}
 
 // Begin a transaction
 func (session *Session) Begin() error {
