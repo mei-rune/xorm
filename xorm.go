@@ -10,6 +10,7 @@ import (
 	"context"
 	"os"
 	"runtime"
+	"database/sql"
 	"time"
 
 	"xorm.io/xorm/caches"
@@ -37,6 +38,46 @@ func NewEngine(driverName string, dataSourceName string) (*Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	cacherMgr := caches.NewManager()
+	mapper := names.NewCacheMapper(new(names.SnakeMapper))
+	tagParser := tags.NewParser("xorm", dialect, mapper, mapper, cacherMgr)
+
+	engine := &Engine{
+		dialect:        dialect,
+		TZLocation:     time.Local,
+		defaultContext: context.Background(),
+		cacherMgr:      cacherMgr,
+		tagParser:      tagParser,
+		driverName:     driverName,
+		dataSourceName: dataSourceName,
+		db:             db,
+	}
+
+	if dialect.URI().DBType == schemas.SQLITE {
+		engine.DatabaseTZ = time.UTC
+	} else {
+		engine.DatabaseTZ = time.Local
+	}
+
+	logger := log.NewSimpleLogger(os.Stdout)
+	logger.SetLevel(log.LOG_INFO)
+	engine.SetLogger(log.NewLoggerAdapter(logger))
+
+	runtime.SetFinalizer(engine, close)
+
+	return engine, nil
+}
+
+// NewEngineFromDB new a db manager according to the parameter. Currently support four
+// drivers
+func NewEngineFromDB(driverName, dataSourceName string, nativedb *sql.DB) (*Engine, error) {
+	dialect, err := dialects.OpenDialect(driverName, dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+
+	db := core.FromDB(nativedb)
 
 	cacherMgr := caches.NewManager()
 	mapper := names.NewCacheMapper(new(names.SnakeMapper))

@@ -7,7 +7,7 @@ package xorm
 import (
 	"time"
 
-	"xorm.io/core"
+	"xorm.io/xorm/core"
 	"xorm.io/xorm/log"
 )
 
